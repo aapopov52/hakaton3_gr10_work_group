@@ -43,8 +43,8 @@ class DatabaseTableEditor(QMainWindow):
         self.table_object_main = QTableWidget(self)
         self.table_object_main.setGeometry(10 + 300, 10, 1500 - 300 - 300 - 10 - 10, 500)
         
-        self.table_object_main.cellEntered.connect(self.table_object_main_select)
-        self.table_object_main.itemClicked.connect(self.table_object_main_select)        
+        
+        self.table_object_main.currentCellChanged.connect(self.table_object_main_cell_changed)
         
         # Поля для фильтров
         self.label_filter = QLabel(self)
@@ -118,17 +118,15 @@ class DatabaseTableEditor(QMainWindow):
         self.btn_summarization.clicked.connect(self.get_summarization_result)
         # вывод результата по сумаризации
         self.edit_summarization_result = QTextEdit(self)
-        self.edit_summarization_result.setGeometry(1200, 85, 290, 475)
+        self.edit_summarization_result.setGeometry(1200, 85, 290, 425)
         
         # Таблицы        
-        self.table_otziv = QTableWidget(self)
-        self.table_otziv.setGeometry(250 + 20, 10 + 500 + 10, 1500 - 250 - 40, 500)
-
         self.table_rubrics = QTableWidget(self)
-        self.table_rubrics.setGeometry(10, 10 + 500 + 10, 250, 500)
+        self.table_rubrics.setGeometry(10, 10 + 500 + 10, 290, 500)
         
-        self.table_otziv.cellEntered.connect(self.table_otziv_select)
-        self.table_otziv.itemClicked.connect(self.table_otziv_select)
+        self.table_otziv = QTableWidget(self)
+        self.table_otziv.setGeometry(310, 10 + 500 + 10, 1500 - 310 - 10, 500)
+
         
         # Статус bar
         self.status_label = QLabel(self)
@@ -155,6 +153,15 @@ class DatabaseTableEditor(QMainWindow):
         
         self.table_object_main.setRowCount(len(rows))
         self.table_object_main.setColumnCount(len(rows[0]))
+        
+        column_labels = ['УН', 'Адрес', 'Наименование', 'кол-во отзывов', ' средний балл']
+        self.table_object_main.setHorizontalHeaderLabels(column_labels)
+        self.table_object_main.setColumnWidth(0, 50)
+        self.table_object_main.setColumnWidth(1, 350)
+        self.table_object_main.setColumnWidth(2, 200)
+        self.table_object_main.setColumnWidth(3, 100)
+        self.table_object_main.setColumnWidth(4, 100)
+        
         #print(rows)
         for i, row in enumerate(rows):
             for j, value in enumerate(row):
@@ -163,6 +170,13 @@ class DatabaseTableEditor(QMainWindow):
                     self.id_object_main = int(value)
                     self.statusBar().showMessage(str(value))
                 self.table_object_main.setItem(i, j, item)
+        self.table_object_main.resizeRowsToContents()
+        
+        if self.table_object_main.rowCount() > 0:
+            self.table_object_main.setCurrentCell(0, 0)
+            self.loadTable_otziv()
+            self.loadTable_rubrics()
+            
     
     
     def loadTable_object_main_where(self):
@@ -206,16 +220,24 @@ class DatabaseTableEditor(QMainWindow):
         #print(sql)
         self.cur.execute(sql)
         rows = self.cur.fetchall()
-
         self.table_otziv.setRowCount(len(rows))
         self.table_otziv.setColumnCount(2)#(len(rows[0]))
+        column_labels = ['УН', 'Отзыв']
+        self.table_otziv.setHorizontalHeaderLabels(column_labels)
+        self.table_otziv.setColumnWidth(0, 50)
+        self.table_otziv.setColumnWidth(1, 1050)
         
         for i, row in enumerate(rows):
             for j, value in enumerate(row):
                 item = QTableWidgetItem(str(value))
                 self.table_otziv.setItem(i, j, item)
     
-    
+        self.table_otziv.resizeRowsToContents()
+        if self.table_otziv.rowCount() > 0:
+            self.table_otziv.setCurrentCell(0, 0)
+            
+        
+        
     # Рубрики
     def loadTable_rubrics(self):
         if self.id_object_main is None:
@@ -232,29 +254,28 @@ class DatabaseTableEditor(QMainWindow):
         
         self.table_rubrics.setRowCount(len(rows))
         self.table_rubrics.setColumnCount(1)#(len(rows[0]))
+        column_labels = ['Рубрика']
+        self.table_rubrics.setHorizontalHeaderLabels(column_labels)
+        self.table_rubrics.setColumnWidth(0, 250)
         
         for i, row in enumerate(rows):
             for j, value in enumerate(row):
                 item = QTableWidgetItem(str(value))
                 self.table_rubrics.setItem(i, j, item)
+        self.table_rubrics.resizeRowsToContents()
+        
+        if self.table_rubrics.rowCount() > 0:
+            self.table_rubrics.setCurrentCell(0, 0)
     
     
-    # встали на ячейку object_main
-    def table_object_main_select(self, item):
-        if item is not None:
-            row = item.row()
-            self.id_object_main = int(self.table_object_main.item(row, 0).text())
+    # перемещаемся по ячейкам таблицы object_main
+    def table_object_main_cell_changed(self, currentRow, currentColumn, previousRow, previousColumn):
+        if currentRow is not None and currentRow != currentColumn:
+            self.id_object_main = int(self.table_object_main.item(currentRow, 0).text())
             smess = str(self.id_object_main)
             self.statusBar().showMessage(smess)
             self.loadTable_otziv()
             self.loadTable_rubrics()
-    
-    
-    # встали на ячейку отзыв
-    def table_otziv_select(self, item):
-        if item is not None:
-            otziv = self.table_otziv.item(item.row(), 1).text()
-            self.statusBar().showMessage(str(self.id_object_main) + ' - ' + otziv)
     
     
     def get_summarization_result(self):
