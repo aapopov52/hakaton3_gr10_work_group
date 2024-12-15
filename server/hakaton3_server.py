@@ -3,6 +3,9 @@ import psycopg2
 import nltk
 from summarizer import Summarizer
 from transformers import AutoModel, AutoTokenizer, AutoConfig
+import eda
+
+punkt_downloaded = False  # Глобальный флаг
 
 def run_proccess():
     conn = psycopg2.connect(
@@ -108,16 +111,27 @@ def run_proccess():
     else:
         text_bad_in = 'отсутствуют'
     
+    metrika_otl = 0
+    metrika_neitral = 0
+    metrika_bad = 0
+    
+    metrika_otl_detal = ''
+    metrika_neitral_detal = ''
+    metrika_bad_detal = ''
+    
     if text_otl_in != 'отсутствуют':
         text_otl_out = get_summ_text(usl_cod_model, dolya_usech, text_otl_in)
+        metrika_otl, metrika_otl_detal = eda.text_sopost(text_otl_in, text_otl_out)
     else:
         text_otl_out = text_otl_in
     if text_neitral_in != 'отсутствуют':
         text_neitral_out = get_summ_text(usl_cod_model, dolya_usech, text_neitral_in)
+        metrika_neitral, metrika_neitral_detal = eda.text_sopost(text_neitral_in, text_neitral_out)
     else:
         text_neitral_out = text_neitral_in
     if text_bad_in != 'отсутствуют':
         text_bad_out = get_summ_text(usl_cod_model, dolya_usech, text_bad_in)
+        metrika_bad, metrika_bad_detal = eda.text_sopost(text_bad_in, text_bad_out)
     else:
         text_bad_out = text_bad_in
 
@@ -127,6 +141,9 @@ def run_proccess():
     text_otl_out = text_otl_out.replace("'", "''")
     text_neitral_out = text_neitral_out.replace("'", "''")
     text_bad_out = text_bad_out.replace("'", "''")
+    metrika_otl_detal = metrika_otl_detal.replace("'", "''")
+    metrika_neitral_detal = metrika_neitral_detal.replace("'", "''")
+    metrika_bad_detal = metrika_bad_detal.replace("'", "''")
                       
     if id_object_main != 0: # тестовый режим
         sql = f''' do $$
@@ -134,10 +151,16 @@ def run_proccess():
                 insert into zayavka_main_summarise_test 
                     (id_object_main, usl_cod_model, dolya_usech,
         		      text_otl_in, text_neitral_in, text_bad_in,
-        	          text_otl_out, text_neitral_out, text_bad_out)
+        	          text_otl_out, text_neitral_out, text_bad_out,
+                      metrika_otl_detal, metrika_otl,
+                      metrika_neitral_detal, metrika_neitral,
+                      metrika_bad_detal, metrika_bad)
                     values ({id_object_main}, '{usl_cod_model}', {dolya_usech},
         		      '{text_otl_in}', '{text_neitral_in}', '{text_bad_in}',
-        	          '{text_otl_out}', '{text_neitral_out}', '{text_bad_out}');
+        	          '{text_otl_out}', '{text_neitral_out}', '{text_bad_out}',
+                      '{metrika_otl_detal}', {metrika_otl},
+                      '{metrika_neitral_detal}', {metrika_neitral},
+                      '{metrika_bad_detal}', {metrika_bad});
                     delete from zayavka_main_summarise where id = {id_zayavka_main_summarise};
                 end; $$
                     '''
@@ -148,13 +171,13 @@ def run_proccess():
    - нейтральные (4, не указан): {i_cnt4 + i_notball} (4 - {i_cnt4}, не указан - {i_notball}) 
    - отрицательные (1, 2, 3): {i_cnt1 + i_cnt2 + i_cnt3} (3 - {i_cnt3}, 2 - {i_cnt2}, 1 - {i_cnt1}) 
 
-Положительные:
+Положительные (метрика {metrika_otl}):
 {text_otl_out}
 
-Нейтральные:
+Нейтральные (метрика {metrika_neitral}):
 {text_neitral_out}
 
-Отрицательные:
+Отрицательные (метрика {metrika_bad}):
 {text_bad_out}'''
     
     
@@ -173,8 +196,12 @@ def get_summ_text(usl_cod_model, dolya_usech, text_in):
         return f'''На вход подана строка {len(text_in)} символов. Ограничене модели - 1 млн. символов.'''
     # usl_cod_model = 'gpt', 'bert', 'rubert' # имя модели
     # dolya_usech = 90 # на сколько ужать (какую долю отсечь)
-    nltk.download('punkt')
-    nltk.download('punkt_tab')
+    global punkt_downloaded
+    if not punkt_downloaded:
+        nltk.download('punkt')
+        nltk.download('punkt_tab')
+        punkt_downloaded = True
+        
     n = int(len(nltk.sent_tokenize(text_in)))
     size1 = int(round(n*(float(dolya_usech)/100)) + 1)
     size = int((n - size1) + 1)
