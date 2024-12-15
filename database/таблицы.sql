@@ -61,7 +61,6 @@ create table zayavka_main_summarise (
 		dt_load TIMESTAMP,
 		dt_run TIMESTAMP,
 		dt_out TIMESTAMP,
-		b_test bool,
 		id_object_main int,
 		CONSTRAINT zayavka_main_summarise_pkey PRIMARY KEY (id)
 		);	 
@@ -92,7 +91,7 @@ drop table zayavka_main_summarise_test
 create table zayavka_main_summarise_test (
 		id serial not null,
 		id_object_main int,
-		usl_cod_model varchar(10), 
+		usl_cod_model varchar(10),
 		dolya_usech int,
 		text_otl_in text,
     	text_neitral_in text,
@@ -100,19 +99,38 @@ create table zayavka_main_summarise_test (
 	    text_otl_out text,
     	text_neitral_out text,
     	text_bad_out text,
-    	metrika1 numeric(5, 2),
-    	metrika2 numeric(5, 2),
-    	metrika3 numeric(5, 2),
+    	b_calc_metrika bool,
+    	metrika_otl_detal text,
+    	metrika_otl numeric(5, 2),
+    	metrika_neitral_detal text,
+    	metrika_neitral numeric(5, 2),
+    	metrika_bad_detal text,
+    	metrika_bad numeric(5, 2),
 		CONSTRAINT zayavka_main_summarise_test_pkey PRIMARY KEY (id)
 		);
-	/*
-select count(*) from zayavka_main_summarise order by dt_run asc;
+    	
+/*
+ insert into zayavka_main_summarise (usl_cod_model, dolya_usech, dt_load, id_object_main)
+ 			select 'bert', 50, now(), id_object_main
+ 			from zayavka_main_summarise_test
+ 			union
+ 			select 'rubert', 50, now(), id_object_main
+ 			from zayavka_main_summarise_test
+ 
+ 
+select * from zayavka_main_summarise order by dt_run asc;
 
 delete from zayavka_main_summarise where id_object_main = 122960
-select * from zayavka_main_summarise_test order by id_object_main;
+
+select * from zayavka_main_summarise_test
+
+select count(*) from zayavka_main_summarise_test where b_calc_metrika is not null
+
+select * from zayavka_main_summarise_test where b_calc_metrika is not null order by id_object_main;
 delete from zayavka_main_summarise_test where id = 10
 
-select * from  zayavka_main_summarise 
+select * from zayavka_main_summarise 
+select count(*) from zayavka_main_summarise_test
 
 -- информация для теста
 
@@ -122,7 +140,7 @@ insert into zayavka_main_summarise (usl_cod_model,dolya_usech,dt_load,id_object_
 				from object_main tm
 				left join zayavka_main_summarise_test t1 on t1.id_object_main = tm.id
 				left join zayavka_main_summarise t2 on t2.id_object_main = tm.id
-				where cnt_otziv >= 10 and t1.id is null and t2.id is null
+				where cnt_otziv >= 5 and t1.id is null and t2.id is null
 				
 				
 
