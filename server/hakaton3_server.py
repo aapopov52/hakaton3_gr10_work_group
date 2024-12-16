@@ -152,12 +152,14 @@ def run_proccess():
                     (id_object_main, usl_cod_model, dolya_usech,
         		      text_otl_in, text_neitral_in, text_bad_in,
         	          text_otl_out, text_neitral_out, text_bad_out,
+                      b_calc_metrika,
                       metrika_otl_detal, metrika_otl,
                       metrika_neitral_detal, metrika_neitral,
                       metrika_bad_detal, metrika_bad)
                     values ({id_object_main}, '{usl_cod_model}', {dolya_usech},
         		      '{text_otl_in}', '{text_neitral_in}', '{text_bad_in}',
         	          '{text_otl_out}', '{text_neitral_out}', '{text_bad_out}',
+                      true,
                       '{metrika_otl_detal}', {metrika_otl},
                       '{metrika_neitral_detal}', {metrika_neitral},
                       '{metrika_bad_detal}', {metrika_bad});
