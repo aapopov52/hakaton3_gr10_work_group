@@ -20,7 +20,8 @@ def run_proccess():
     sql = f''' select id, usl_cod_model, dolya_usech, id_object_main
                 from zayavka_main_summarise 
                 where dt_run is null and dt_out is null 
-                order by case when id_object_main is null then 0 else 1 end asc; '''
+                order by case when id_object_main is null then 0 else 1 end asc
+                limit 1; '''
     cur.execute(sql)
     rows = cur.fetchall()
     # записей нет - выходим
