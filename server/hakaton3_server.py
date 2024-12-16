@@ -4,8 +4,15 @@ import nltk
 from summarizer import Summarizer
 from transformers import AutoModel, AutoTokenizer, AutoConfig
 import eda
+import re
 
 punkt_downloaded = False  # Глобальный флаг
+
+def is_integer(value):
+    if value is None:
+        return False
+    pattern = r'^-?\d+$'
+    return bool(re.match(pattern, value))
 
 def run_proccess():
     conn = psycopg2.connect(
@@ -17,24 +24,75 @@ def run_proccess():
            )
     
     cur = conn.cursor()
-    sql = f''' select id, usl_cod_model, dolya_usech, id_object_main
-                from zayavka_main_summarise 
-                where dt_run is null and dt_out is null 
-                order by case when id_object_main is null then 0 else 1 end asc
-                limit 1; '''
+    sql = f''' do $$
+                declare 
+                    id_ int;
+                    usl_cod_model_ varchar(10);
+                    dolya_usech_ int;
+                    id_object_main_ int;
+                begin
+                    id_ = 0;
+                    usl_cod_model_ = '';
+                    dolya_usech_ = 0;
+                    id_object_main_ = 0;
+                    
+                    select id, usl_cod_model, dolya_usech, id_object_main
+                        into id_, usl_cod_model_, dolya_usech_, id_object_main_
+                    from zayavka_main_summarise 
+                    where dt_run is null and dt_out is null 
+                    order by case when id_object_main is null then 0 else 1 end asc
+                    limit 1; 
+                    
+                    update zayavka_main_summarise set dt_run = now() where id = id_;
+                    RAISE INFO 'id_zayavka_main_summarise_%', id_;
+                    RAISE INFO 'usl_cod_model_%', usl_cod_model_;
+                    RAISE INFO 'dolya_usech_%', dolya_usech_;
+                    RAISE INFO 'id_object_main_%', id_object_main_;
+                    
+                end; $$ '''
+    conn.notices = []
     cur.execute(sql)
-    rows = cur.fetchall()
-    # записей нет - выходим
-    if len(rows) == 0:
+    
+    cur.execute(sql)
+    conn.commit()
+    
+    id_zayavka_main_summarise = 0
+    id_object_main = 0
+    usl_cod_model = ''
+    dolya_usech = 0
+    for notice in conn.notices:
+        if 'id_zayavka_main_summarise' in notice:
+            s1 = notice[notice.find('id_zayavka_main_summarise') + len('id_zayavka_main_summarise') + 1:].strip()
+            if is_integer(s1):
+                id_zayavka_main_summarise = int(s1)
+        if 'usl_cod_model' in notice:
+            usl_cod_model = notice[notice.find('usl_cod_model') + len('usl_cod_model') + 1:].strip()
+        if 'dolya_usech' in notice:
+            s1 = notice[notice.find('dolya_usech') + len('dolya_usech') + 1:].strip()
+            if is_integer(s1):
+                dolya_usech = int(s1)
+        if 'id_object_main' in notice:
+            s1 = notice[notice.find('id_object_main') + len('id_object_main') + 1:].strip()
+            if is_integer(s1):
+                id_object_main = int(s1)
+    
+    if id_zayavka_main_summarise == 0:
         cur.close()
         conn.close()
         return
-    id_object_main = 0
-    id_zayavka_main_summarise = rows[0][0]
-    usl_cod_model = rows[0][1]
-    dolya_usech = rows[0][2]
-    if rows[0][3] is not None:
-        id_object_main = rows[0][3]
+    
+#    rows = cur.fetchall()
+#    # записей нет - выходим
+#    if len(rows) == 0:
+#        cur.close()
+#        conn.close()
+#        return
+#    id_object_main = 0
+#    id_zayavka_main_summarise = rows[0][0]
+#    usl_cod_model = rows[0][1]
+#    dolya_usech = rows[0][2]
+#    if rows[0][3] is not None:
+#        id_object_main = rows[0][3]
         
     text_otl = []
     text_neitral = []
@@ -55,9 +113,9 @@ def run_proccess():
     i_cnt1 = 0
     i_notball = 0
     
-    sql = f''' update zayavka_main_summarise set dt_run = now() where id = {id_zayavka_main_summarise}; '''
-    cur.execute(sql)
-    conn.commit()
+#    sql = f''' update zayavka_main_summarise set dt_run = now() where id = {id_zayavka_main_summarise}; '''
+#    cur.execute(sql)
+#    conn.commit()
     
     if id_object_main != 0: # тестовый режим
         sql = f''' select rating, text
