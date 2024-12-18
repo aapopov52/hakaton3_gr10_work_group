@@ -19,7 +19,7 @@ def run_proccess():
            host="194.87.215.7",
            database="hakaton3",
            user="gen_user",
-           password="KMb+9b&J(eUi~5",
+           password="9!pL>B\jAQF0\J",
            port = '5432'
            )
     
@@ -44,6 +44,7 @@ def run_proccess():
                     limit 1; 
                     
                     update zayavka_main_summarise set dt_run = now() where id = id_;
+                    
                     RAISE INFO 'id_zayavka_main_summarise_%', id_;
                     RAISE INFO 'usl_cod_model_%', usl_cod_model_;
                     RAISE INFO 'dolya_usech_%', dolya_usech_;
@@ -51,8 +52,6 @@ def run_proccess():
                     
                 end; $$ '''
     conn.notices = []
-    cur.execute(sql)
-    
     cur.execute(sql)
     conn.commit()
     
