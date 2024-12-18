@@ -84,7 +84,7 @@ def main():
            host="194.87.215.7",
            database="hakaton3",
            user="gen_user",
-           password="KMb+9b&J(eUi~5",
+           password="9!pL>B\jAQF0\J",
            port = '5432'
            )
     while run_proccess(conn) == 1:
